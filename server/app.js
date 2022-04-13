@@ -1,45 +1,29 @@
+const csvToJson = require('csvtojson');
 const express = require('express');
 const fs = require('fs');
+const { Server } = require('http');
 const app = express();
-const morgan= require('morgan');
-const { nextTick } = require('process');
-app.use((req, res, nextTick) => {
-    let agent= req.headers['user-agent'].replace(/,/, '');
-    let time= new Date().toISOString();
-    let method= req.method;
-    let resources= req.path;
-    let version= `HTTP/${req.httpVersion}`;
-    let status= 200;
-
-//morgan.token("custom", ":user-agent; :date[iso]; (:method); :url; :http-version; :status")
-
-
-let data= agent + ',' + time + ',' + method + ',' + resources + ',' + version + ',' +  status + '\n';
-//console.log( data );
-
-//let stringData= JSON.stringify(data);
-console.log(data)
-//console.log('😈', stringData) 
-
-
-
-//app.use(morgan("custom"));
+//const { nextTick } = require('process');
+//app.use((req, res, nextTick) => {
+app.set('json spaces', 2);   
 
 
 // write your logging code here
-fs.appendFile('./server/log.csv', data, function(err){
-    if(err)throw err;
-    console.log('saved')
-    //if no err 
-    nextTick();
-})
-
-
-
-
-
 // write your code to respond "ok" here
 app.get('/', (req, res) => {
+    let agent= req.headers['user-agent'].replace(/,/g, '');
+    let time= new Date().toISOString();
+    let method= req.method;
+    let resource= req.path;
+    let version= `HTTP/${req.httpVersion}`;
+    let status= res.statusCode;
+    let data=  '\n'+ `${agent},${time},${method},${resource},${version},${status}`;
+    console.log(data)
+    fs.appendFile('./server/log.csv', data, function(err){
+        if(err)throw err;
+        //if no err 
+        //nextTick();
+    })
     res.send("ok").status(200);
     //console.log('😇', agent, time)
     
@@ -51,8 +35,13 @@ app.get('/', (req, res) => {
 });
 
 app.get('/logs', (req, res) => {
+    csvToJson()
+    .fromFile('./server/log.csv')
+    .then((jsonObj)=>{
+    res.json(jsonObj);
+})
     // write your code to return a json object containing the log data here
-    fs.readFile('/server./log.csv', 'utf8', function read(err, data){
+    /*fs.readFile('/server./log.csv', 'utf8', function read(err, data){
         
         let jsonObj = '[';
         let splitData = data.split('\n');
@@ -76,7 +65,6 @@ app.get('/logs', (req, res) => {
     }
     jsonObj+= ']';
         res.json(JSON.parse(jsonObj));
-})
+})*/
 });
-})
 module.exports = app;
